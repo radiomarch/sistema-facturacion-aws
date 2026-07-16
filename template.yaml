@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Sistema de Facturacion Serverless
+
+Parameters:
+  EmailNotificaciones:
+    Type: String
+    Description: Email para recibir notificaciones de facturas
+
+Resources:
+
+  TablaFacturas:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: facturas-cf
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: factura_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: factura_id
+          KeyType: HASH
+
+  ColaFacturas:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: cola-facturas-cf
+
+  TopicNotificaciones:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: notificaciones-facturas-cf
+      Subscription:
+        - Protocol: email
+          Endpoint: !Ref EmailNotificaciones
+
+Outputs:
+  TablaFacturasNombre:
+    Value: !Ref TablaFacturas
+    Description: Nombre de la tabla DynamoDB
+
+  ColaFacturasURL:
+    Value: !Ref ColaFacturas
+    Description: URL de la cola SQS
+
+  TopicNotificacionesARN:
+    Value: !Ref TopicNotificaciones
+    Description: ARN del topic SNS
