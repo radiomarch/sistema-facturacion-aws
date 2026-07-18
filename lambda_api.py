@@ -35,7 +35,7 @@ def lambda_handler(event, context):
     
     if method == "OPTIONS":
         return responder(200, "OK")
-     try:
+    try:
         if method == "POST" and path == "/facturas":
             return crear_factura(event)
         elif method == "GET" and path == "/facturas":
