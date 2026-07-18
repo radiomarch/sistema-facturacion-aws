@@ -41,6 +41,14 @@
     .cancelada { background: #fee2e2; color: #991b1b; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
     #cargando { color: #6b7280; font-size: 0.9rem; }
+    .tabla-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    @media (max-width: 640px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .col-ocultar { display: none; }
+      td, th { padding: 0.6rem 0.5rem; font-size: 0.82rem; }
+      header { padding: 1rem; }
+      main { padding: 0 0.5rem; }
+    }
   </style>
 </head>
 <body>
@@ -84,20 +92,22 @@
         <button class="btn-small" onclick="cargarFacturas()">Actualizar</button>
       </div>
       <span id="cargando">Cargando...</span>
+      <div class="tabla-wrapper">
       <table id="tablaFacturas" style="display:none">
         <thead>
           <tr>
-            <th>ID</th>
+            <th class="col-ocultar">ID</th>
             <th>Cliente</th>
-            <th>Concepto</th>
+            <th class="col-ocultar">Concepto</th>
             <th>Monto</th>
             <th>Estado</th>
-            <th>Fecha</th>
+            <th class="col-ocultar">Fecha</th>
             <th>Acción</th>
           </tr>
         </thead>
         <tbody id="cuerpoTabla"></tbody>
       </table>
+      </div>
     </section>
   </main>
 
@@ -120,12 +130,12 @@
           facturas.forEach(f => {
             tbody.innerHTML += `
               <tr>
-                <td><code style="font-size:0.8rem">${f.factura_id}</code></td>
+                <td class="col-ocultar"><code style="font-size:0.8rem">${f.factura_id}</code></td>
                 <td>${f.cliente_nombre}<br><span style="font-size:0.8rem;color:#6b7280">${f.cliente_email}</span></td>
-                <td>${f.concepto}</td>
+                <td class="col-ocultar">${f.concepto}</td>
                 <td>$${parseFloat(f.monto).toLocaleString("es-MX", {minimumFractionDigits:2})}</td>
                 <td><span class="badge ${f.estado}">${f.estado}</span></td>
-                <td>${f.fecha_creacion || "-"}</td>
+                <td class="col-ocultar">${f.fecha_creacion || "-"}</td>
                 <td>
                   <select onchange="cambiarEstado('${f.factura_id}', this.value)" style="font-size:0.8rem;padding:0.3rem;border:1px solid #ddd;border-radius:4px">
                     <option value="">Cambiar...</option>
