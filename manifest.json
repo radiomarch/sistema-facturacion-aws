@@ -1,0 +1,21 @@
+{
+  "name": "Sistema de Facturación",
+  "short_name": "Facturación",
+  "description": "Sistema serverless de facturación en AWS",
+  "start_url": "/sistema-facturacion-aws/",
+  "display": "standalone",
+  "background_color": "#f5f5f5",
+  "theme_color": "#1a1a2e",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/1a1a2e/ffffff?text=F",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/1a1a2e/ffffff?text=F",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
