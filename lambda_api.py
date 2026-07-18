@@ -20,14 +20,22 @@ class DecimalEncoder(json.JSONEncoder):
 def responder(status, data):
     return {
         "statusCode": status,
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS"
+        },
         "body": json.dumps(data, cls=DecimalEncoder, ensure_ascii=False)
     }
+
 
 def lambda_handler(event, context):
     method = event["requestContext"]["http"]["method"]
     path = event["requestContext"]["http"]["path"]
-
-    try:
+    
+    if method == "OPTIONS":
+        return responder(200, "OK")
+     try:
         if method == "POST" and path == "/facturas":
             return crear_factura(event)
         elif method == "GET" and path == "/facturas":
