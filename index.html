@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Facturación</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; }
+    header { background: #1a1a2e; color: white; padding: 1.5rem 2rem; }
+    header h1 { font-size: 1.4rem; font-weight: 600; }
+    header p { font-size: 0.85rem; opacity: 0.7; margin-top: 0.2rem; }
+    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
+    section { background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    h2 { font-size: 1.1rem; margin-bottom: 1.2rem; color: #1a1a2e; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.3rem; color: #555; }
+    input { width: 100%; padding: 0.6rem 0.8rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; }
+    input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .full { grid-column: 1 / -1; }
+    button { padding: 0.65rem 1.4rem; border: none; border-radius: 6px; font-size: 0.95rem; cursor: pointer; font-weight: 500; }
+    .btn-primary { background: #4f46e5; color: white; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-small { padding: 0.3rem 0.7rem; font-size: 0.8rem; background: #e5e7eb; color: #374151; border-radius: 4px; }
+    .btn-small:hover { background: #d1d5db; }
+    #mensaje { margin-top: 1rem; padding: 0.8rem; border-radius: 6px; font-size: 0.9rem; display: none; }
+    .exito { background: #d1fae5; color: #065f46; }
+    .error { background: #fee2e2; color: #991b1b; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    th { text-align: left; padding: 0.7rem 1rem; background: #f9fafb; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; border-bottom: 1px solid #e5e7eb; }
+    td { padding: 0.8rem 1rem; border-bottom: 1px solid #f3f4f6; }
+    tr:last-child td { border-bottom: none; }
+    .badge { padding: 0.25rem 0.6rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }
+    .pendiente { background: #fef3c7; color: #92400e; }
+    .procesada { background: #d1fae5; color: #065f46; }
+    .cancelada { background: #fee2e2; color: #991b1b; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    #cargando { color: #6b7280; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Sistema de Facturación</h1>
+    <p>AWS Serverless — API Gateway + Lambda + DynamoDB</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>Nueva Factura</h2>
+      <form id="formFactura">
+        <div class="form-grid">
+          <div>
+            <label>Nombre del cliente</label>
+            <input type="text" id="cliente_nombre" placeholder="Ej: Empresa ABC" required>
+          </div>
+          <div>
+            <label>Email del cliente</label>
+            <input type="email" id="cliente_email" placeholder="cliente@email.com" required>
+          </div>
+          <div class="full">
+            <label>Concepto</label>
+            <input type="text" id="concepto" placeholder="Ej: Servicios de consultoría" required>
+          </div>
+          <div>
+            <label>Monto (USD)</label>
+            <input type="number" id="monto" placeholder="0.00" min="0" step="0.01" required>
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button type="submit" class="btn-primary">Crear Factura</button>
+          </div>
+        </div>
+        <div id="mensaje"></div>
+      </form>
+    </section>
+
+    <section>
+      <div class="toolbar">
+        <h2 style="margin:0">Facturas</h2>
+        <button class="btn-small" onclick="cargarFacturas()">Actualizar</button>
+      </div>
+      <span id="cargando">Cargando...</span>
+      <table id="tablaFacturas" style="display:none">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Cliente</th>
+            <th>Concepto</th>
+            <th>Monto</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="cuerpoTabla"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const API = "https://v39ydf4azj.execute-api.us-east-1.amazonaws.com";
+
+    async function cargarFacturas() {
+      document.getElementById("cargando").style.display = "block";
+      document.getElementById("tablaFacturas").style.display = "none";
+      try {
+        const res = await fetch(`${API}/facturas`);
+        const data = await res.json();
+        const tbody = document.getElementById("cuerpoTabla");
+        tbody.innerHTML = "";
+        const facturas = data.facturas || [];
+        if (facturas.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;padding:2rem">No hay facturas aún</td></tr>';
+        } else {
+          facturas.sort((a, b) => (b.fecha_creacion || "").localeCompare(a.fecha_creacion || ""));
+          facturas.forEach(f => {
+            tbody.innerHTML += `
+              <tr>
+                <td><code style="font-size:0.8rem">${f.factura_id}</code></td>
+                <td>${f.cliente_nombre}<br><span style="font-size:0.8rem;color:#6b7280">${f.cliente_email}</span></td>
+                <td>${f.concepto}</td>
+                <td>$${parseFloat(f.monto).toLocaleString("es-MX", {minimumFractionDigits:2})}</td>
+                <td><span class="badge ${f.estado}">${f.estado}</span></td>
+                <td>${f.fecha_creacion || "-"}</td>
+                <td>
+                  <select onchange="cambiarEstado('${f.factura_id}', this.value)" style="font-size:0.8rem;padding:0.3rem;border:1px solid #ddd;border-radius:4px">
+                    <option value="">Cambiar...</option>
+                    <option value="pendiente">pendiente</option>
+                    <option value="procesada">procesada</option>
+                    <option value="cancelada">cancelada</option>
+                  </select>
+                </td>
+              </tr>`;
+          });
+        }
+        document.getElementById("tablaFacturas").style.display = "table";
+      } catch (e) {
+        document.getElementById("cargando").textContent = "Error al cargar facturas.";
+      } finally {
+        document.getElementById("cargando").style.display = "none";
+      }
+    }
+
+    document.getElementById("formFactura").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector("button");
+      btn.disabled = true;
+      btn.textContent = "Creando...";
+      const body = {
+        cliente_nombre: document.getElementById("cliente_nombre").value,
+        cliente_email: document.getElementById("cliente_email").value,
+        concepto: document.getElementById("concepto").value,
+        monto: parseFloat(document.getElementById("monto").value)
+      };
+      const msg = document.getElementById("mensaje");
+      try {
+        const res = await fetch(`${API}/facturas`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok) {
+          msg.className = "exito";
+          msg.textContent = `Factura creada: ${data.factura_id}`;
+          e.target.reset();
+          cargarFacturas();
+        } else {
+          msg.className = "error";
+          msg.textContent = data || "Error al crear la factura";
+        }
+      } catch (err) {
+        msg.className = "error";
+        msg.textContent = "No se pudo conectar con la API";
+      } finally {
+        msg.style.display = "block";
+        btn.disabled = false;
+        btn.textContent = "Crear Factura";
+      }
+    });
+
+    async function cambiarEstado(id, estado) {
+      if (!estado) return;
+      try {
+        await fetch(`${API}/facturas/${id}/estado`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ estado })
+        });
+        cargarFacturas();
+      } catch (e) {
+        alert("Error al actualizar estado");
+      }
+    }
+
+    cargarFacturas();
+  </script>
+</body>
+</html>
